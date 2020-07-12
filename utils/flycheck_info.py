@@ -1,6 +1,5 @@
 import numba as nb
 
-
 def gpu_check():
     if nb.cuda.is_available():
         device = nb.cuda.get_current_device()
@@ -15,5 +14,8 @@ def gpu_check():
         }
         print(f"🦑 Found device {str(device)}")
         print(dimensions)
+
+        print(f"🦑 Max shared memory cells for int16: {device.MAX_SHARED_MEMORY_PER_BLOCK / nb.int16.bitwidth}")
+        print(f"🦑 Max shared memory cells for float32: {device.MAX_SHARED_MEMORY_PER_BLOCK / nb.float32.bitwidth}")
         return dimensions
     raise RuntimeError("Missing GPU")
