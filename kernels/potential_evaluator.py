@@ -3,7 +3,6 @@ from typing import List, Callable, Tuple
 from numba import cuda
 from numba.cuda.cudadrv.devicearray import DeviceNDArray
 
-from functions.potential import potential_function_cuda
 from utils.info import gpu_check
 
 
@@ -16,10 +15,12 @@ class PotentialEvaluator:
     ):
         self.NUMBER_OF_PHI_POINTS = number_of_phi_points
         self.NUMBER_OF_FIELD_POINTS = number_of_field_points
+        self.potential_function_cuda = potential_function_cuda
+
         self.kernel = self.kernel_wrapper()
         self.gpu_info = gpu_check()
 
-    def allocate_number_of_threads(self) -> Tuple[int, int, int]:
+    def allocate_max_threads(self) -> Tuple[int, int, int]:
         print(
             f"""Thread parameters:
         > Max threads per block: {self.gpu_info['max_threads_per_block']}
@@ -28,23 +29,43 @@ class PotentialEvaluator:
         > Max threads in z: {self.gpu_info['max_block_dim_z']}"""
         )
 
-        max_threads_approximation = int(self.gpu_info["max_threads_per_block"] ** (1 / 3))
+        max_threads_approximation = int(
+            self.gpu_info["max_threads_per_block"] ** (1 / 3)
+        )
         max_thread_allocation = (
             min(max_threads_approximation, self.gpu_info["max_block_dim_x"]),
             min(max_threads_approximation, self.gpu_info["max_block_dim_y"]),
             min(max_threads_approximation, self.gpu_info["max_block_dim_z"]),
         )
-        print(f"Allocating (THREADS_PER_BLOCK = {max_thread_allocation})")
+        print(f"🐳 Allocating (THREADS_PER_BLOCK = {max_thread_allocation})")
 
         return max_thread_allocation
 
-    def verify_number_of_blocks():
-
-
+    def verify_blocks_per_grid(self, blocks_per_grid: Tuple) -> bool:
+        print(
+            f"""Block parameters:
+        > Max blocks in x: {self.gpu_info['max_grid_dim_x']}
+        > Max blocks in y: {self.gpu_info['max_grid_dim_y']}
+        > Max blocks in z: {self.gpu_info['max_grid_dim_z']}"""
+        )
+        for (block_dim, max_dim) in zip(
+            blocks_per_grid,
+            [
+                self.gpu_info["max_grid_dim_x"],
+                self.gpu_info["max_grid_dim_y"],
+                self.gpu_info["max_grid_dim_z"],
+            ],
+        ):
+            if block_dim > max_dim:
+                print("🦑 Allocating too many blocks")
+                return False
+        print(f"🐳 Verified BLOCKS_PER_GRID={blocks_per_grid}")
+        return True
 
     def kernel_wrapper(self):
         NUMBER_OF_FIELD_POINTS = self.NUMBER_OF_FIELD_POINTS
         NUMBER_OF_PHI_POINTS = self.NUMBER_OF_PHI_POINTS
+        potential_function_cuda = self.potential_function_cuda
 
         @cuda.jit
         def kernel(
@@ -72,9 +93,7 @@ class PotentialEvaluator:
             while phi01_idx < NUMBER_OF_PHI_POINTS:
                 while phi02_idx < NUMBER_OF_PHI_POINTS:
                     while phi03_idx < NUMBER_OF_PHI_POINTS:
-                        array_out[R][phi01_idx][phi02_idx][
-                            phi03_idx
-                        ] = potential_function_cuda(
+                        array_out[L][R][phi01_idx][phi02_idx][phi03_idx] = potential_function_cuda(
                             (
                                 phixx_array[phi01_idx],
                                 phixx_array[phi02_idx],
