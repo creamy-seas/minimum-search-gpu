@@ -14,8 +14,8 @@ gpu_info = gpu_check()
 max_shared_memory_per_block = gpu_info["max_shared_memory_per_block"]
 
 # Parameters for simulation ###################################################
-NUMBER_OF_PHI_POINTS = 5
-NUMBER_OF_FIELD_POINTS = 10
+NUMBER_OF_PHI_POINTS = 100
+NUMBER_OF_FIELD_POINTS = 50
 ALPHA = 1
 LOWER = -0.5
 UPPER = 1.5
@@ -27,13 +27,13 @@ phixx_array = np.linspace(-pi, pi, NUMBER_OF_PHI_POINTS)
 potential_evaluator = PotentialEvaluator(
     NUMBER_OF_FIELD_POINTS, NUMBER_OF_PHI_POINTS, potential_function_cuda
 )
-
+THREADS_PER_BLOCK = potential_evaluator.allocate_max_threads()
 # Execution ###################################################################
-THREADS_PER_BLOCK = (8, 10, 10)
 DEVICE_lr_array = cuda.to_device(lr_array)
 DEVICE_phixx_array = cuda.to_device(phixx_array)
 DEVICE_potential_array = cuda.device_array(
     shape=(
+        NUMBER_OF_FIELD_POINTS,
         NUMBER_OF_FIELD_POINTS,
         NUMBER_OF_PHI_POINTS,
         NUMBER_OF_PHI_POINTS,
@@ -42,12 +42,10 @@ DEVICE_potential_array = cuda.device_array(
     dtype=np.float32,
 )
 
-for L in range(0, 1):
-    print(f"🐳 Evaluated potential for L={L}")
-    potential_evaluator.kernel[NUMBER_OF_FIELD_POINTS, THREADS_PER_BLOCK](
-        DEVICE_phixx_array, DEVICE_lr_array, L, ALPHA, DEVICE_potential_array
-    )
-    print(DEVICE_potential_array.copy_to_host()[0][0][0])
+potential_evaluator.kernel[NUMBER_OF_FIELD_POINTS, THREADS_PER_BLOCK](
+    DEVICE_phixx_array, DEVICE_lr_array, ALPHA, DEVICE_potential_array
+)
+print(DEVICE_potential_array.copy_to_host()[0][0][0])
 
 #     kernel[NUMBER_OF_FIELD_POINTS, THREADS_PER_BLOCK](
 #         , DEVICE_potential_array
