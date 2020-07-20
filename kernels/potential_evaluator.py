@@ -17,15 +17,17 @@ class PotentialEvaluator:
         self.gpu_info = gpu_check()
 
     def allocate_max_threads(
-        self, user_defined_number: Optional[int]=None
+            self, user_defined_number: Optional[int] = None,
+            verbose=False
     ) -> Tuple[int, int, int]:
-        print(
-            f"""Thread parameters:
+        if verbose:
+            print(
+                f"""Thread parameters:
         > Max threads per block: {self.gpu_info['max_threads_per_block']}
         > Max threads in x: {self.gpu_info['max_block_dim_x']}
         > Max threads in y: {self.gpu_info['max_block_dim_y']}
         > Max threads in z: {self.gpu_info['max_block_dim_z']}"""
-        )
+            )
         max_threads_approximation = int(
             self.gpu_info["max_threads_per_block"] ** (1 / 3)
         )
@@ -37,17 +39,18 @@ class PotentialEvaluator:
             min(max_threads_approximation, self.gpu_info["max_block_dim_y"]),
             min(max_threads_approximation, self.gpu_info["max_block_dim_z"]),
         )
-        print(f"🐳 Allocating (THREADS_PER_BLOCK = {max_thread_allocation})")
+        print(f"🐳 {'Allocating':<20} THREADS_PER_BLOCK = {max_thread_allocation}")
 
         return max_thread_allocation
 
-    def verify_blocks_per_grid(self, blocks_per_grid: Tuple) -> bool:
-        print(
-            f"""Block parameters:
+    def verify_blocks_per_grid(self, blocks_per_grid: Tuple, verbose=False) -> bool:
+        if verbose:
+            print(
+                f"""Block parameters:
         > Max blocks in x: {self.gpu_info['max_grid_dim_x']}
         > Max blocks in y: {self.gpu_info['max_grid_dim_y']}
         > Max blocks in z: {self.gpu_info['max_grid_dim_z']}"""
-        )
+            )
         for (block_dim, max_dim) in zip(
             blocks_per_grid,
             [
@@ -59,7 +62,7 @@ class PotentialEvaluator:
             if block_dim > max_dim:
                 print("🦑 Allocating too many blocks")
                 return False
-        print(f"🐳 Verified BLOCKS_PER_GRID={blocks_per_grid}")
+        print(f"🐳 {'Verified':<20} BLOCKS_PER_GRID={blocks_per_grid}")
         return True
 
     def kernel_wrapper(self):
@@ -78,9 +81,11 @@ class PotentialEvaluator:
             """
             phixx_array:        array of the values that phi01, phi02, phi03
             lr_array:           array of the values for phil and phir
-            L_offset, R_offset: because of finite memory on device, we will launch this
-                                function multiple times but with different offsets to cover the whole
-                                lr_array
+            L_offset, R_offset: because of finite memory on device, grid search is performed
+                                on separate qudrants of the field.
+                                In order to a global lr_array, this offset
+                                if introduced to access elements for the different quadrants
+
             alpha:              variables parametr
             array_out:          allocate either with cuda.device_array or passing in a numpy array
 

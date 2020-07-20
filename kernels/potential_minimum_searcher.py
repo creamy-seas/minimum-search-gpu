@@ -16,15 +16,17 @@ class PotentialMinimumSearcher:
         self.gpu_info = gpu_check()
 
     def allocate_max_threads(
-        self, user_defined_number: Optional[int] = None
+            self, user_defined_number: Optional[int] = None,
+            verbose=False
     ) -> Tuple[int, int]:
-        print(
-            f"""Thread parameters:
+        if verbose:
+            print(
+                f"""Thread parameters:
         > Max threads per block: {self.gpu_info['max_threads_per_block']}
         > Max threads in x: {self.gpu_info['max_block_dim_x']}
         > Max threads in y: {self.gpu_info['max_block_dim_y']}
         > Max threads in z: {self.gpu_info['max_block_dim_z']}"""
-        )
+            )
         max_threads_approximation = int(
             self.gpu_info["max_threads_per_block"] ** (1 / 2)
         )
@@ -35,7 +37,7 @@ class PotentialMinimumSearcher:
             min(max_threads_approximation, self.gpu_info["max_block_dim_x"]),
             min(max_threads_approximation, self.gpu_info["max_block_dim_x"]),
         )
-        print(f"🐳 Allocating (THREADS_PER_BLOCK = {max_thread_allocation})")
+        print(f"🐳 {'Allocating':<20} THREADS_PER_BLOCK = {max_thread_allocation}")
 
         return max_thread_allocation
 
@@ -44,18 +46,15 @@ class PotentialMinimumSearcher:
 
         @cuda.jit
         def kernel(
-            potential_grid: DeviceNDArray,
-            # L_offset: int,
-            # R_offset: int,
-            array_out: DeviceNDArray,
+            potential_grid: DeviceNDArray, array_out: DeviceNDArray,
         ):
             """Take a 5D grid loaded into memory and find the minimum for each L-R point
 
-            L_offset, R_offset: because of finite memory on device, we might need an offset
-            potential_grid:     array allocated on the device that stores the results of
-                                previous potential evaluation. L, R index the field that
-                                it was evaluated at
+            potential_grid:     array with the evaluated potential values at each L,R point
+            array_out:          array with a [min_potential, min_phi01, min_phi02, min_phi03] for
+                                each L,R point
             """
+
             L = cuda.blockIdx.x
             R = cuda.blockIdx.y
 
@@ -99,7 +98,7 @@ class PotentialMinimumSearcher:
                 phi01_idx += cuda.blockDim.x
             cuda.syncthreads()
 
-            # # Project from line to points (go across the line) ################
+            # Project from line to points (go across the line) ################
             for (phi01_idx, potential) in enumerate(potential_grid[L][R][:, 0, 0]):
                 array_out[L][R][0] = potential_grid[L][R][0][0][0]
                 if potential < potential_grid[L][R][0][0][0]:

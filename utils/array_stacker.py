@@ -4,6 +4,12 @@ import numpy as np
 
 
 class ArrayStacker:
+    @staticmethod
+    def extract_ith_entry(arrays_to_extract: List[List[np.ndarray]]):
+        """Extract the ith entry of an array"""
+
+        pass
+
     @classmethod
     def stack_into_square(cls, arrays_to_stack: List[List[np.ndarray]]) -> np.ndarray:
         cls.square_check(arrays_to_stack)

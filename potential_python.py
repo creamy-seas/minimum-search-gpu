@@ -5,7 +5,6 @@ import numba as nb
 import numpy as np
 from scipy import optimize
 
-NUMBA_TUPLE_TYPE = nb.typeof((0.0, 0.0, 0.0, 0.0))
 FLUX = float
 FLUX_NUMBER = int
 cos = np.cos
@@ -61,8 +60,8 @@ class Miminize:
 ###############################################################################
 #                              Common parameters                              #
 ###############################################################################
-NUMBER_OF_PHI_POINTS = 50
-NROWSCOLS = 2
+NUMBER_OF_PHI_POINTS = 10
+NROWSCOLS = 10
 ALPHA = 1
 LOWER = -0.5
 UPPER = 1.5

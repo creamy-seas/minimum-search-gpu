@@ -15,14 +15,14 @@ def gpu_check():
             "max_grid_dim_y": device.MAX_GRID_DIM_Y,
             "max_grid_dim_z": device.MAX_GRID_DIM_Z,
         }
-        print(f"🦑 Found device {str(device)}")
-        print(parameters)
+        # print(f"🦑 Found device {str(device)}")
+        # print(parameters)
 
-        print(
-            f"🦑 Max shared memory cells for int16: {device.MAX_SHARED_MEMORY_PER_BLOCK / nb.int16.bitwidth}"
-        )
-        print(
-            f"🦑 Max shared memory cells for float32: {device.MAX_SHARED_MEMORY_PER_BLOCK / nb.float32.bitwidth}"
-        )
+        # print(
+        # f"🦑 Max shared memory cells for int16: {device.MAX_SHARED_MEMORY_PER_BLOCK / nb.int16.bitwidth}"
+        # )
+        # print(
+        # f"🦑 Max shared memory cells for float32: {device.MAX_SHARED_MEMORY_PER_BLOCK / nb.float32.bitwidth}"
+        # )
         return parameters
     raise RuntimeError("Missing GPU")

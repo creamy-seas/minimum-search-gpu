@@ -2,12 +2,12 @@ import unittest
 from unittest.mock import Mock
 from unittest.mock import patch
 
-from kernels.potential_minimum_search import PotentialMinimumSearcher
+from kernels.potential_minimum_searcher import PotentialMinimumSearcher
 import numpy as np
 from numba import cuda
 
 
-class TestPotentialEvaluator(unittest.TestCase):
+class TestPotentialMinimumSearcher(unittest.TestCase):
     def setUp(self):
 
         self.NUMBER_OF_PHI_POINTS = 2
