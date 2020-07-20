@@ -1,4 +1,4 @@
-from typing import List, Callable, Tuple
+from typing import List, Callable, Tuple, Optional
 
 from numba import cuda
 from numba.cuda.cudadrv.devicearray import DeviceNDArray
@@ -8,19 +8,17 @@ from utils.info import gpu_check
 
 class PotentialEvaluator:
     def __init__(
-        self,
-        number_of_field_points: int,
-        number_of_phi_points: int,
-        potential_function_cuda: Callable,
+        self, number_of_phi_points: int, potential_function_cuda: Callable,
     ):
         self.NUMBER_OF_PHI_POINTS = number_of_phi_points
-        self.NUMBER_OF_FIELD_POINTS = number_of_field_points
         self.potential_function_cuda = potential_function_cuda
 
         self.kernel = self.kernel_wrapper()
         self.gpu_info = gpu_check()
 
-    def allocate_max_threads(self) -> Tuple[int, int, int]:
+    def allocate_max_threads(
+        self, user_defined_number: Optional[int]=None
+    ) -> Tuple[int, int, int]:
         print(
             f"""Thread parameters:
         > Max threads per block: {self.gpu_info['max_threads_per_block']}
@@ -28,10 +26,12 @@ class PotentialEvaluator:
         > Max threads in y: {self.gpu_info['max_block_dim_y']}
         > Max threads in z: {self.gpu_info['max_block_dim_z']}"""
         )
-
         max_threads_approximation = int(
             self.gpu_info["max_threads_per_block"] ** (1 / 3)
         )
+        if user_defined_number is not None:
+            max_threads_approximation = user_defined_number
+
         max_thread_allocation = (
             min(max_threads_approximation, self.gpu_info["max_block_dim_x"]),
             min(max_threads_approximation, self.gpu_info["max_block_dim_y"]),
@@ -63,7 +63,6 @@ class PotentialEvaluator:
         return True
 
     def kernel_wrapper(self):
-        NUMBER_OF_FIELD_POINTS = self.NUMBER_OF_FIELD_POINTS
         NUMBER_OF_PHI_POINTS = self.NUMBER_OF_PHI_POINTS
         potential_function_cuda = self.potential_function_cuda
 
@@ -71,12 +70,17 @@ class PotentialEvaluator:
         def kernel(
             phixx_array: List[float],
             lr_array: List[float],
+            L_offset: int,
+            R_offset: int,
             alpha: float,
             array_out: DeviceNDArray,
         ):
             """
             phixx_array:        array of the values that phi01, phi02, phi03
             lr_array:           array of the values for phil and phir
+            L_offset, R_offset: because of finite memory on device, we will launch this
+                                function multiple times but with different offsets to cover the whole
+                                lr_array
             alpha:              variables parametr
             array_out:          allocate either with cuda.device_array or passing in a numpy array
 
@@ -88,19 +92,25 @@ class PotentialEvaluator:
             phi03_idx = cuda.threadIdx.z
             L = cuda.blockIdx.x
             R = cuda.blockIdx.y
+            L_offset = int(L + L_offset)
+            R_offset = int(R + R_offset)
 
             # Traverse over the full grid
             while phi01_idx < NUMBER_OF_PHI_POINTS:
                 while phi02_idx < NUMBER_OF_PHI_POINTS:
                     while phi03_idx < NUMBER_OF_PHI_POINTS:
-                        array_out[L][R][phi01_idx][phi02_idx][phi03_idx] = potential_function_cuda(
+                        L_FIELD = lr_array[L_offset]
+                        R_FIELD = lr_array[R_offset]
+                        array_out[L][R][phi01_idx][phi02_idx][
+                            phi03_idx
+                        ] = potential_function_cuda(
                             (
                                 phixx_array[phi01_idx],
                                 phixx_array[phi02_idx],
                                 phixx_array[phi03_idx],
                             ),
-                            lr_array[L],
-                            lr_array[R],
+                            L_FIELD,
+                            R_FIELD,
                             alpha,
                         )
 
