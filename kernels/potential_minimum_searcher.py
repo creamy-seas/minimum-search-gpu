@@ -16,8 +16,7 @@ class PotentialMinimumSearcher:
         self.gpu_info = gpu_check()
 
     def allocate_max_threads(
-            self, user_defined_number: Optional[int] = None,
-            verbose=False
+        self, user_defined_number: Optional[int] = None, verbose=False
     ) -> Tuple[int, int]:
         if verbose:
             print(
@@ -67,6 +66,7 @@ class PotentialMinimumSearcher:
 
             while phi01_idx < NUMBER_OF_PHI_POINTS:
                 while phi02_idx < NUMBER_OF_PHI_POINTS:
+                    min_phi03_grid[phi01_idx][phi02_idx] = 0  # set default
                     for (phi03_idx, potential) in enumerate(
                         potential_grid[L][R][phi01_idx][phi02_idx]
                     ):
@@ -86,6 +86,7 @@ class PotentialMinimumSearcher:
             cum = 0
 
             while phi01_idx < NUMBER_OF_PHI_POINTS:
+                min_phi02_grid[phi01_idx] = 0  # set default
                 for (phi02_idx, potential) in enumerate(
                     potential_grid[L][R][phi01_idx][:, 0]
                 ):
@@ -99,9 +100,13 @@ class PotentialMinimumSearcher:
             cuda.syncthreads()
 
             # Project from line to points (go across the line) ################
+            array_out[L][R][0] = potential_grid[L][R][0][0][0]
+            array_out[L][R][1] = 0
+            array_out[L][R][2] = 0
+            array_out[L][R][3] = 0
+
             for (phi01_idx, potential) in enumerate(potential_grid[L][R][:, 0, 0]):
-                array_out[L][R][0] = potential_grid[L][R][0][0][0]
-                if potential < potential_grid[L][R][0][0][0]:
+                if potential < array_out[L][R][0]:
                     array_out[L][R][0] = potential
                     array_out[L][R][1] = phi01_idx
                     array_out[L][R][2] = min_phi02_grid[phi01_idx]

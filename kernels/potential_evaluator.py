@@ -17,8 +17,7 @@ class PotentialEvaluator:
         self.gpu_info = gpu_check()
 
     def allocate_max_threads(
-            self, user_defined_number: Optional[int] = None,
-            verbose=False
+        self, user_defined_number: Optional[int] = None, verbose=False
     ) -> Tuple[int, int, int]:
         if verbose:
             print(
@@ -104,8 +103,6 @@ class PotentialEvaluator:
             while phi01_idx < NUMBER_OF_PHI_POINTS:
                 while phi02_idx < NUMBER_OF_PHI_POINTS:
                     while phi03_idx < NUMBER_OF_PHI_POINTS:
-                        L_FIELD = lr_array[L_offset]
-                        R_FIELD = lr_array[R_offset]
                         array_out[L][R][phi01_idx][phi02_idx][
                             phi03_idx
                         ] = potential_function_cuda(
@@ -114,8 +111,8 @@ class PotentialEvaluator:
                                 phixx_array[phi02_idx],
                                 phixx_array[phi03_idx],
                             ),
-                            L_FIELD,
-                            R_FIELD,
+                            lr_array[L_offset],
+                            lr_array[R_offset],
                             alpha,
                         )
 

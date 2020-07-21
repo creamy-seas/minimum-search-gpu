@@ -46,7 +46,7 @@ class TestPotentialFunction(unittest.TestCase):
         test_result = kernel_wrapped_func[1, 1](1, 2, 3, 4, 5, 6, store_result)
         self.assertEqual(store_result.copy_to_host()[0], 612345)
 
-    def test_potential_function_cuda(self):
+    def test_potential_function__with_cuda(self):
         store_result = cuda.device_array(shape=(1), dtype=np.float32)
 
         test_result = self.sut[1, 1](0, 0, 0, 0, 0, 1, store_result)
@@ -55,6 +55,10 @@ class TestPotentialFunction(unittest.TestCase):
         test_result = self.sut[1, 1](0, np.pi / 2, 0, 0, 0, 1, store_result)
         self.assertAlmostEqual(store_result.copy_to_host()[0], 3, f"🐳 Expected a 3")
 
-    def test_potential_function(self):
+    def test_potential_function__withpi2(self):
         test_result = potential_function((0, np.pi / 2, 0), 0, 0, 1)
         self.assertAlmostEqual(test_result, 3)
+
+    def test_potential_function__with0(self):
+        test_result = potential_function((0, 0, 0), 0, 0, 1)
+        self.assertAlmostEqual(test_result, 0)

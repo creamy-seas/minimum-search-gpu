@@ -15,9 +15,9 @@ from kernels.potential_minimum_searcher import PotentialMinimumSearcher
 from utils.array_stacker import ArrayStacker
 
 # Parameters for simulation ###################################################
-NUMBER_OF_PHI_POINTS = 10
-NUMBER_OF_FIELD_POINTS = 10
-NUMBER_OF_FIELD_POINTS_PER_RUN = 10
+NUMBER_OF_PHI_POINTS = 101
+NUMBER_OF_FIELD_POINTS = 21
+NUMBER_OF_FIELD_POINTS_PER_RUN = 21
 NUMBER_OF_FIELD_RUNS = (
     NUMBER_OF_FIELD_POINTS - 1
 ) // NUMBER_OF_FIELD_POINTS_PER_RUN + 1
@@ -56,7 +56,9 @@ DEVICE_grid_search_result_array = cuda.device_array(
 )
 
 # Go through teach of the field section and evaluate ##########################
-quadrants = defaultdict(lambda: [[None] * NUMBER_OF_FIELD_RUNS for i in range(0, NUMBER_OF_FIELD_RUNS)])
+quadrants = defaultdict(
+    lambda: [[None] * NUMBER_OF_FIELD_RUNS for i in range(0, NUMBER_OF_FIELD_RUNS)]
+)
 
 for (L_RUN, R_RUN) in itertools.product(
     range(0, NUMBER_OF_FIELD_RUNS), range(0, NUMBER_OF_FIELD_RUNS)
@@ -78,12 +80,17 @@ for (L_RUN, R_RUN) in itertools.product(
         BLOCKS_PER_GRID, THREADS_PER_BLOCK_potential_search
     ](DEVICE_potential_array, DEVICE_grid_search_result_array)
 
-
     grid_search_result_array = DEVICE_grid_search_result_array.copy_to_host()
-    quadrants["potential"][L_RUN][R_RUN] = grid_search_result_array[:,:,0]
-    quadrants["phi01"][L_RUN][R_RUN] = phixx_array[grid_search_result_array[:,:,1].astype(int)]
-    quadrants["phi02"][L_RUN][R_RUN] = phixx_array[grid_search_result_array[:,:,2].astype(int)]
-    quadrants["phi03"][L_RUN][R_RUN] = phixx_array[grid_search_result_array[:,:,3].astype(int)]
+    quadrants["potential"][L_RUN][R_RUN] = grid_search_result_array[:, :, 0]
+    quadrants["phi01"][L_RUN][R_RUN] = phixx_array[
+        grid_search_result_array[:, :, 1].astype(int)
+    ]
+    quadrants["phi02"][L_RUN][R_RUN] = phixx_array[
+        grid_search_result_array[:, :, 2].astype(int)
+    ]
+    quadrants["phi03"][L_RUN][R_RUN] = phixx_array[
+        grid_search_result_array[:, :, 3].astype(int)
+    ]
 
 result = {}
 for key, value in quadrants.items():
@@ -100,9 +107,9 @@ fig, ax = plt.subplots(1, 1, sharex=True, sharey=True, figsize=(5, 5))
 im = ax.imshow(
     # result["potential"],
     result["phi01"],
-    extent = [LOWER, UPPER, LOWER, UPPER],
-    origin= 'lower',
-    cmap='cividis',
+    extent=[LOWER, UPPER, LOWER, UPPER],
+    origin="lower",
+    cmap="cividis",
     # cmap='YlGnBu'
     # interpolation='spline36'
 )

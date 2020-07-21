@@ -15,8 +15,6 @@ def potential_function(
 ):
     """Order of the flux array is [phi01, phi02, phi03]"""
 
-    alpha = float(alpha)
-    (L, R) = (float(L), float(R))
     (phi01, phi02, phi03) = (
         float(phi_array[0]),
         float(phi_array[1]),
@@ -30,8 +28,8 @@ def potential_function(
             alpha * cos(phi02)
             + cos(phi01)
             + cos(phi03)
-            + cos(phi02 - phi01 - L)
-            + cos(phi02 - phi03 + R)
+            + cos(phi02 - phi01 + L)
+            + cos(phi02 - phi03 - R)
         )
     )
 
