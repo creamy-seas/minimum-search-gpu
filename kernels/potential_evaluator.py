@@ -14,55 +14,6 @@ class PotentialEvaluator:
         self.potential_function_cuda = potential_function_cuda
 
         self.kernel = self.kernel_wrapper()
-        self.gpu_info = gpu_check()
-
-    def allocate_max_threads(
-        self, user_defined_number: Optional[int] = None, verbose=False
-    ) -> Tuple[int, int, int]:
-        if verbose:
-            print(
-                f"""Thread parameters:
-        > Max threads per block: {self.gpu_info['max_threads_per_block']}
-        > Max threads in x: {self.gpu_info['max_block_dim_x']}
-        > Max threads in y: {self.gpu_info['max_block_dim_y']}
-        > Max threads in z: {self.gpu_info['max_block_dim_z']}"""
-            )
-        max_threads_approximation = int(
-            self.gpu_info["max_threads_per_block"] ** (1 / 3)
-        )
-        if user_defined_number is not None:
-            max_threads_approximation = user_defined_number
-
-        max_thread_allocation = (
-            min(max_threads_approximation, self.gpu_info["max_block_dim_x"]),
-            min(max_threads_approximation, self.gpu_info["max_block_dim_y"]),
-            min(max_threads_approximation, self.gpu_info["max_block_dim_z"]),
-        )
-        print(f"🐳 {'Allocating':<20} THREADS_PER_BLOCK = {max_thread_allocation}")
-
-        return max_thread_allocation
-
-    def verify_blocks_per_grid(self, blocks_per_grid: Tuple, verbose=False) -> bool:
-        if verbose:
-            print(
-                f"""Block parameters:
-        > Max blocks in x: {self.gpu_info['max_grid_dim_x']}
-        > Max blocks in y: {self.gpu_info['max_grid_dim_y']}
-        > Max blocks in z: {self.gpu_info['max_grid_dim_z']}"""
-            )
-        for (block_dim, max_dim) in zip(
-            blocks_per_grid,
-            [
-                self.gpu_info["max_grid_dim_x"],
-                self.gpu_info["max_grid_dim_y"],
-                self.gpu_info["max_grid_dim_z"],
-            ],
-        ):
-            if block_dim > max_dim:
-                print("🦑 Allocating too many blocks")
-                return False
-        print(f"🐳 {'Verified':<20} BLOCKS_PER_GRID={blocks_per_grid}")
-        return True
 
     def kernel_wrapper(self):
         NUMBER_OF_PHI_POINTS = self.NUMBER_OF_PHI_POINTS

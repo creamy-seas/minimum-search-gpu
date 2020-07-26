@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 from kernels.potential_evaluator import PotentialEvaluator
 from template import mock_potential_function_cuda
+from utils.info import allocate_max_threads
 import numpy as np
 from numba import cuda
 
@@ -37,7 +38,7 @@ class TestPotentialEvaluator(unittest.TestCase):
         pass
 
     def test(self):
-        THREADS_PER_BLOCK = self.sut.allocate_max_threads()
+        THREADS_PER_BLOCK = allocate_max_threads()
 
         self.sut.kernel[
             (self.NUMBER_OF_FIELD_POINTS_PER_RUN, self.NUMBER_OF_FIELD_POINTS_PER_RUN),
@@ -76,7 +77,7 @@ class TestPotentialEvaluator(unittest.TestCase):
         np.all(expected == self.DEVICE_out_array.copy_to_host())
 
     def test_offset(self):
-        THREADS_PER_BLOCK = self.sut.allocate_max_threads()
+        THREADS_PER_BLOCK = allocate_max_threads()
 
         self.sut.kernel[
             (self.NUMBER_OF_FIELD_POINTS_PER_RUN, self.NUMBER_OF_FIELD_POINTS_PER_RUN),
